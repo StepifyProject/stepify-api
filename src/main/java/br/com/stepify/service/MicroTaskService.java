@@ -15,10 +15,8 @@ import java.util.Optional;
 public class MicroTaskService {
     private final MicroTaskMapper microTaskMapper;
 
-    public List<MicroTask> createMicroTask(List<MicroTask> microTasks, CreateMicroTaskCommand command) {
-        MicroTask microTask = microTaskMapper.fromCommand(command);
-        microTasks.add(microTask);
-        return microTasks;
+    public MicroTask createMicroTask(CreateMicroTaskCommand command) {
+        return microTaskMapper.fromCommand(command);
     }
 
     public List<MicroTask> updateMicroTaskById(List<MicroTask> microTasks, String id, UpdateMicroTaskCommand command) {
