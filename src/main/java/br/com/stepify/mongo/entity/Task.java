@@ -12,6 +12,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -28,6 +29,8 @@ public class Task {
     private ETaskPriority priority;
     private LocalDateTime dueDate;
     private LocalDateTime completedAt;
+
+    private List<MicroTask> microTasks;
 
     @CreatedDate
     private LocalDateTime createdAt;
