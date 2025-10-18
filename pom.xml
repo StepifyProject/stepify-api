@@ -9,9 +9,9 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>br.com.stepify</groupId>
-	<artifactId>stepify-api</artifactId>
+	<artifactId>task-service</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>stepify-api</name>
+	<name>task-service</name>
 	<description>API for Stepify, a smart to-do app that breaks down tasks to fight procrastination.</description>
 	<url/>
 	<licenses>
