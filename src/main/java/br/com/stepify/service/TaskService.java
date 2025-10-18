@@ -58,6 +58,8 @@ public class TaskService {
         updateTaskAction.execute(task, command);
         log.info("Task with ID: {} updated successfully", id);
 
+        taskRepository.save(task);
+
         return taskMapper.toDTO(task);
     }
 
