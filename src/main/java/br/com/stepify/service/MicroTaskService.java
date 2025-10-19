@@ -2,13 +2,13 @@ package br.com.stepify.service;
 
 import br.com.stepify.command.microtask.inputs.CreateMicroTaskCommand;
 import br.com.stepify.command.microtask.inputs.UpdateMicroTaskCommand;
+import br.com.stepify.exception.EntityNotFoundException;
 import br.com.stepify.mapper.MicroTaskMapper;
 import br.com.stepify.mongo.entity.MicroTask;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -19,11 +19,8 @@ public class MicroTaskService {
         return microTaskMapper.fromCommand(command);
     }
 
-    public List<MicroTask> updateMicroTaskById(List<MicroTask> microTasks, String id, UpdateMicroTaskCommand command) {
-        Optional<MicroTask> microTaskOptional = findMicroTaskById(microTasks, id);
-        if (microTaskOptional.isEmpty()) return microTasks;
-
-        MicroTask microTask = microTaskOptional.get();
+    public List<MicroTask> updateMicroTaskById(List<MicroTask> microTasks, String microTaskId, UpdateMicroTaskCommand command) {
+        MicroTask microTask = findMicroTaskById(microTasks, microTaskId);
 
         microTask.setTitle(command.title());
         microTask.setDescription(command.description());
@@ -40,15 +37,17 @@ public class MicroTaskService {
         return microTasks;
     }
 
-    private Optional<MicroTask> findMicroTaskById(List<MicroTask> microTasks, String id) {
+    private MicroTask findMicroTaskById(List<MicroTask> microTasks, String id) {
         for (MicroTask microTask : microTasks) {
-            if (microTask.getId().equals(id)) return Optional.of(microTask);
+            if (microTask.getId().equals(id)) return microTask;
         }
 
-        return Optional.empty();
+        String message = String.format("Microtask with ID: %s not found while updating", id);
+        throw new EntityNotFoundException(message);
     }
 
     public List<MicroTask> deleteMicroTaskById(List<MicroTask> microTasks, String id) {
+        findMicroTaskById(microTasks, id);
         microTasks.removeIf(microTask -> microTask.getId().equals(id));
         return microTasks;
     }

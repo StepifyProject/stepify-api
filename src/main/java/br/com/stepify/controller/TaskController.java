@@ -1,5 +1,7 @@
 package br.com.stepify.controller;
 
+import br.com.stepify.command.microtask.inputs.CreateMicroTaskCommand;
+import br.com.stepify.command.microtask.inputs.UpdateMicroTaskCommand;
 import br.com.stepify.command.task.inputs.CreateTaskCommand;
 import br.com.stepify.command.task.inputs.UpdateTaskCommand;
 import br.com.stepify.command.task.outputs.TaskDTO;
@@ -52,9 +54,8 @@ public class TaskController {
     @ApiResponse(responseCode = "400", description = "Invalid task input")
     @ApiResponse(responseCode = "404", description = "Task not found")
     @PatchMapping("/{taskId}")
-    public ResponseEntity<TaskDTO> updateById(
-            @PathVariable(value = "taskId") String taskId,
-            @RequestBody @Valid UpdateTaskCommand command) {
+    public ResponseEntity<TaskDTO> updateById(@PathVariable(value = "taskId") String taskId,
+                                              @RequestBody @Valid UpdateTaskCommand command) {
         return ResponseEntity.ok(taskService.updateTaskById(taskId, command));
     }
 
@@ -65,5 +66,33 @@ public class TaskController {
     public ResponseEntity<TaskDTO> deleteTaskById(@PathVariable(value = "taskId") String taskId) {
         taskService.deleteTaskById(taskId);
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Add a microtask to a task")
+    @ApiResponse(responseCode = "200", description = "Microtask added successfully")
+    @ApiResponse(responseCode = "404", description = "Task not found")
+    @PostMapping("/{taskId}/microtasks")
+    public ResponseEntity<TaskDTO> addMicroTask(@PathVariable(value = "taskId") String taskId,
+                                                @RequestBody @Valid CreateMicroTaskCommand command) {
+        return ResponseEntity.ok(taskService.addMicroTask(command, taskId));
+    }
+
+    @Operation(summary = "Update a microtask by ID")
+    @ApiResponse(responseCode = "200", description = "Microtask updated successfully")
+    @ApiResponse(responseCode = "404", description = "Task or Microtask not found")
+    @PutMapping("/{taskId}/microtasks/{microTaskId}")
+    public ResponseEntity<TaskDTO> updateMicroTaskById(@PathVariable(value = "taskId") String taskId,
+                                                       @PathVariable(value = "microTaskId") String microTaskId,
+                                                       @RequestBody @Valid UpdateMicroTaskCommand command) {
+        return ResponseEntity.ok(taskService.updateMicroTaskById(command, microTaskId, taskId));
+    }
+
+    @Operation(summary = "Delete a microtask by ID")
+    @ApiResponse(responseCode = "200", description = "Microtask deleted successfully")
+    @ApiResponse(responseCode = "404", description = "Task or Microtask not found")
+    @DeleteMapping("/{taskId}/microtasks/{microTaskId}")
+    public ResponseEntity<TaskDTO> deleteMicroTaskById(@PathVariable(value = "taskId") String taskId,
+                                                       @PathVariable(value = "microTaskId") String microTaskId) {
+        return ResponseEntity.ok(taskService.deleteMicroTaskById(microTaskId, taskId));
     }
 }
