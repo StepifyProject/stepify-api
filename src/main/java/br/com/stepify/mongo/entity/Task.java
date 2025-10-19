@@ -32,6 +32,8 @@ public class Task {
 
     private List<MicroTask> microTasks;
 
+    private boolean deleted;
+
     @CreatedDate
     private LocalDateTime createdAt;
 

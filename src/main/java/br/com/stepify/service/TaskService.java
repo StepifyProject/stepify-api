@@ -10,6 +10,10 @@ import br.com.stepify.mongo.repository.TaskRepository;
 import br.com.stepify.service.action.task.UpdateTaskAction;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,6 +25,7 @@ public class TaskService {
     private final TaskMapper taskMapper;
     private final UpdateTaskAction updateTaskAction;
     private final TaskRepository taskRepository;
+    private final MongoTemplate mongoTemplate;
 
     public TaskDTO createTask(CreateTaskCommand command) {
         log.info("Creating new task with title: {}", command.title());
@@ -34,7 +39,7 @@ public class TaskService {
 
     public List<TaskDTO> findAllTasks() {
         log.info("Searching all tasks");
-        List<Task> allTasks = taskRepository.findAll();
+        List<Task> allTasks = taskRepository.findAllByDeletedFalse();
 
         return allTasks.stream()
                 .map(taskMapper::toDTO)
@@ -68,12 +73,16 @@ public class TaskService {
 
         getTaskByIdOrThrow(id, "deleting");
 
-        taskRepository.deleteById(id);
+        Query query = new Query(Criteria.where("id").is(id));
+        Update update = Update.update("deleted", true);
+
+        mongoTemplate.updateFirst(query, update, Task.class);
+
         log.info("Task with ID: {} deleted successfully", id);
     }
 
     private Task getTaskByIdOrThrow(String id, String context) {
-        return taskRepository.findById(id)
+        return taskRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> {
                     String message = String.format("Task with ID: %s not found while %s", id, context);
                     log.error(message);
