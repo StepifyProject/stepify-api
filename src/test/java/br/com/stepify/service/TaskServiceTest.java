@@ -24,8 +24,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class TaskServiceTest {
@@ -99,9 +98,54 @@ class TaskServiceTest {
         }
     }
 
+    @Nested
+    class FindAllTasks {
+        @Test
+        void shouldReturnAllTasksSuccessfully() {
+            CreateTaskCommand taskCommand1 = createTaskCommand("Task 1", Collections.emptyList());
+            CreateTaskCommand taskCommand2 = createTaskCommand("Task 2", Collections.emptyList());
+            Task expectedTask1 = createTask("1", taskCommand1, Collections.emptyList());
+            Task expectedTask2 = createTask("2", taskCommand2, Collections.emptyList());
+            List<Task> expectedTaskList = List.of(expectedTask1, expectedTask2);
+            TaskDTO expectedTaskDTO1 = createTaskDTO(expectedTask1);
+            TaskDTO expectedTaskDTO2 = createTaskDTO(expectedTask2);
+
+            when(taskRepository.findAllByDeletedFalse()).thenReturn(expectedTaskList);
+            when(taskMapper.toDTO(expectedTask1)).thenReturn(expectedTaskDTO1);
+            when(taskMapper.toDTO(expectedTask2)).thenReturn(expectedTaskDTO2);
+
+            List<TaskDTO> result = taskService.findAllTasks();
+
+            assertNotNull(result);
+            assertEquals(2, result.size());
+            assertEquals("1", result.get(0).id());
+            assertEquals("2", result.get(1).id());
+
+            verify(taskRepository).findAllByDeletedFalse();
+            verify(taskMapper, times(2)).toDTO(any(Task.class));
+        }
+
+        @Test
+        void shouldReturnEmptyListWhenNoTasksExist() {
+            when(taskRepository.findAllByDeletedFalse()).thenReturn(Collections.emptyList());
+
+            List<TaskDTO> result = taskService.findAllTasks();
+
+            assertNotNull(result);
+            assertTrue(result.isEmpty());
+
+            verify(taskRepository).findAllByDeletedFalse();
+            verify(taskMapper, never()).toDTO(any());
+        }
+    }
+
     private CreateTaskCommand createTaskCommand(List<CreateMicroTaskCommand> microTaskCommands) {
+        return createTaskCommand("Title", microTaskCommands);
+    }
+
+    private CreateTaskCommand createTaskCommand(String title, List<CreateMicroTaskCommand> microTaskCommands) {
         return new CreateTaskCommand(
-                "Title",
+                title,
                 "Description",
                 ETaskStatus.PENDING,
                 ETaskPriority.HIGH,
@@ -111,17 +155,25 @@ class TaskServiceTest {
     }
 
     private CreateMicroTaskCommand createMicroTaskCommand() {
+        return createMicroTaskCommand("MicroTask title", 0);
+    }
+
+    private CreateMicroTaskCommand createMicroTaskCommand(String title, int order) {
         return new CreateMicroTaskCommand(
-                "MicroTask title",
+                title,
                 "MicroTask description",
                 ETaskStatus.PENDING,
-                0
+                order
         );
     }
 
     private Task createTask(CreateTaskCommand command, List<MicroTask> microTasks) {
+        return createTask("1", command, microTasks);
+    }
+
+    private Task createTask(String id, CreateTaskCommand command, List<MicroTask> microTasks) {
         return Task.builder()
-                .id("1")
+                .id(id)
                 .title(command.title())
                 .description(command.description())
                 .status(command.status())
@@ -133,6 +185,7 @@ class TaskServiceTest {
                 .deleted(false)
                 .build();
     }
+
 
     private MicroTask createMicroTask(CreateMicroTaskCommand microTaskCommand) {
         return MicroTask.builder()
