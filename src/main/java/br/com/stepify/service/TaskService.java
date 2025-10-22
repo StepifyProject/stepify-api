@@ -1,13 +1,10 @@
 package br.com.stepify.service;
 
-import br.com.stepify.command.microtask.inputs.CreateMicroTaskCommand;
-import br.com.stepify.command.microtask.inputs.UpdateMicroTaskCommand;
 import br.com.stepify.command.task.inputs.CreateTaskCommand;
 import br.com.stepify.command.task.inputs.UpdateTaskCommand;
 import br.com.stepify.command.task.outputs.TaskDTO;
 import br.com.stepify.exception.EntityNotFoundException;
 import br.com.stepify.mapper.TaskMapper;
-import br.com.stepify.mongo.entity.MicroTask;
 import br.com.stepify.mongo.entity.Task;
 import br.com.stepify.mongo.repository.TaskRepository;
 import br.com.stepify.service.action.task.UpdateTaskAction;
@@ -27,9 +24,8 @@ import java.util.List;
 public class TaskService {
     private final TaskMapper taskMapper;
     private final UpdateTaskAction updateTaskAction;
-    private final MicroTaskService microTaskService;
-    private final TaskRepository taskRepository;
     private final MongoTemplate mongoTemplate;
+    private final TaskRepository taskRepository;
 
     public TaskDTO createTask(CreateTaskCommand command) {
         log.info("Creating new task with title: {}", command.title());
@@ -83,48 +79,6 @@ public class TaskService {
         mongoTemplate.updateFirst(query, update, Task.class);
 
         log.info("Task with ID: {} deleted successfully", id);
-    }
-
-    public TaskDTO addMicroTask(CreateMicroTaskCommand command, String taskId) {
-        log.info("Adding microtask to task with ID: {}", taskId);
-
-        Task existingTask = getTaskByIdOrThrow(taskId, "adding microtask");
-        MicroTask microTask = microTaskService.createMicroTask(command);
-
-        existingTask.getMicroTasks().add(microTask);
-        Task taskSaved = taskRepository.save(existingTask);
-
-        log.info("Microtask {} added successfully with ID: {}", microTask.getTitle(), microTask.getId());
-
-        return taskMapper.toDTO(taskSaved);
-    }
-
-    public TaskDTO updateMicroTaskById(UpdateMicroTaskCommand command, String microTaskId, String taskId) {
-        log.info("Updating microtask with ID: {}", microTaskId);
-
-        Task existingTask = getTaskByIdOrThrow(taskId, "updating microtask");
-
-        List<MicroTask> updatedMicroTasks = microTaskService.updateMicroTaskById(existingTask.getMicroTasks(), microTaskId, command);
-        existingTask.setMicroTasks(updatedMicroTasks);
-        Task taskSaved = taskRepository.save(existingTask);
-
-        log.info("Microtask with ID: {} updated successfully", microTaskId);
-
-        return taskMapper.toDTO(taskSaved);
-    }
-
-    public TaskDTO deleteMicroTaskById(String microTaskId, String taskId) {
-        log.info("Deleting microtask with ID: {}", microTaskId);
-
-        Task existingTask = getTaskByIdOrThrow(taskId, "deleting microtask");
-
-        List<MicroTask> updatedMicroTasks = microTaskService.deleteMicroTaskById(existingTask.getMicroTasks(), microTaskId);
-        existingTask.setMicroTasks(updatedMicroTasks);
-        Task taskSaved = taskRepository.save(existingTask);
-
-        log.info("Microtask with ID: {} deleted successfully", microTaskId);
-
-        return taskMapper.toDTO(taskSaved);
     }
 
     private Task getTaskByIdOrThrow(String id, String context) {

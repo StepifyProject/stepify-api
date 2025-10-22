@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 
 public record CreateMicroTaskCommand(
         @NotBlank
+        String taskId,
+        @NotBlank
         String title,
         String description,
         ETaskStatus status,
