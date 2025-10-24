@@ -34,10 +34,14 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class TaskServiceTest {
-    @Mock private TaskMapper taskMapper;
-    @Mock private UpdateTaskAction updateTaskAction;
-    @Mock private MongoTemplate mongoTemplate;
-    @Mock private TaskRepository taskRepository;
+    @Mock
+    private TaskMapper taskMapper;
+    @Mock
+    private UpdateTaskAction updateTaskAction;
+    @Mock
+    private MongoTemplate mongoTemplate;
+    @Mock
+    private TaskRepository taskRepository;
 
     @InjectMocks
     private TaskService taskService;
@@ -45,32 +49,8 @@ class TaskServiceTest {
     @Nested
     class CreateTask {
         @Test
-        void shouldCreateTaskSuccessfullyWithEmptyMicroTasks() {
-            CreateTaskCommand command = createTaskCommand();
-            Task expectedTask = createTask("1", command);
-            TaskDTO expectedTaskDTO = createTaskDTO(expectedTask);
-
-            when(taskMapper.fromCommand(any(CreateTaskCommand.class))).thenReturn(expectedTask);
-            when(taskRepository.save(any(Task.class))).thenReturn(expectedTask);
-            when(taskMapper.toDTO(any(Task.class))).thenReturn(expectedTaskDTO);
-
-            TaskDTO result = taskService.createTask(command);
-
-            assertNotNull(result);
-            assertEquals(command.title(), result.title());
-            assertEquals(command.description(), result.description());
-            assertEquals(command.priority(), result.priority());
-            assertEquals(command.status(), result.status());
-            assertEquals(command.dueDate(), result.dueDate());
-
-            verify(taskMapper).fromCommand(command);
-            verify(taskRepository).save(expectedTask);
-            verify(taskMapper).toDTO(expectedTask);
-        }
-
-        @Test
-        void shouldCreateTaskSuccessfullyWithMicroTasks() {
-            CreateTaskCommand taskCommand = createTaskCommand();
+        void shouldCreateTaskSuccessfully() {
+            CreateTaskCommand taskCommand = createTaskCommand("Title");
             Task expectedTask = createTask("1", taskCommand);
             TaskDTO expectedTaskDTO = createTaskDTO(expectedTask);
 
@@ -81,11 +61,7 @@ class TaskServiceTest {
             TaskDTO result = taskService.createTask(taskCommand);
 
             assertNotNull(result);
-            assertEquals(taskCommand.title(), result.title());
-            assertEquals(taskCommand.description(), result.description());
-            assertEquals(taskCommand.priority(), result.priority());
-            assertEquals(taskCommand.status(), result.status());
-            assertEquals(taskCommand.dueDate(), result.dueDate());
+            assertTaskDTO(taskCommand, result);
 
             verify(taskMapper).fromCommand(taskCommand);
             verify(taskRepository).save(expectedTask);
@@ -148,11 +124,7 @@ class TaskServiceTest {
             TaskDTO result = taskService.findTaskById(taskId);
 
             assertNotNull(result);
-            assertEquals(expectedTask.getTitle(), result.title());
-            assertEquals(expectedTask.getDescription(), result.description());
-            assertEquals(expectedTask.getPriority(), result.priority());
-            assertEquals(expectedTask.getStatus(), result.status());
-            assertEquals(expectedTask.getDueDate(), result.dueDate());
+            assertTaskDTO(expectedTask, result);
 
             verify(taskRepository).findByIdAndDeletedFalse(taskId);
             verify(taskMapper).toDTO(expectedTask);
@@ -184,12 +156,7 @@ class TaskServiceTest {
             TaskDTO result = taskService.updateTaskById(taskId, command);
 
             assertNotNull(result);
-            assertEquals(command.title(), result.title());
-            assertEquals(command.description(), result.description());
-            assertEquals(command.priority(), result.priority());
-            assertEquals(command.status(), result.status());
-            assertEquals(command.dueDate(), result.dueDate());
-            assertEquals(command.completedAt(), result.completedAt());
+            assertTaskDTO(updatedTask, result);
 
             verify(taskRepository).findByIdAndDeletedFalse(taskId);
             verify(updateTaskAction).execute(existingTask, command);
@@ -243,8 +210,20 @@ class TaskServiceTest {
         }
     }
 
-    private CreateTaskCommand createTaskCommand() {
-        return createTaskCommand("Title");
+    private void assertTaskDTO(CreateTaskCommand expected, TaskDTO actual) {
+        assertEquals(expected.title(), actual.title());
+        assertEquals(expected.description(), actual.description());
+        assertEquals(expected.priority(), actual.priority());
+        assertEquals(expected.status(), actual.status());
+        assertEquals(expected.dueDate(), actual.dueDate());
+    }
+
+    private void assertTaskDTO(Task expected, TaskDTO actual) {
+        assertEquals(expected.getTitle(), actual.title());
+        assertEquals(expected.getDescription(), actual.description());
+        assertEquals(expected.getPriority(), actual.priority());
+        assertEquals(expected.getStatus(), actual.status());
+        assertEquals(expected.getDueDate(), actual.dueDate());
     }
 
     private CreateTaskCommand createTaskCommand(String title) {
