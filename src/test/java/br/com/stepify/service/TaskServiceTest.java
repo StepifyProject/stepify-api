@@ -1,6 +1,5 @@
 package br.com.stepify.service;
 
-import br.com.stepify.command.microtask.inputs.CreateMicroTaskCommand;
 import br.com.stepify.command.task.inputs.CreateTaskCommand;
 import br.com.stepify.command.task.inputs.UpdateTaskCommand;
 import br.com.stepify.command.task.outputs.TaskDTO;
@@ -8,7 +7,6 @@ import br.com.stepify.enums.ETaskPriority;
 import br.com.stepify.enums.ETaskStatus;
 import br.com.stepify.exception.EntityNotFoundException;
 import br.com.stepify.mapper.TaskMapper;
-import br.com.stepify.mongo.entity.MicroTask;
 import br.com.stepify.mongo.entity.Task;
 import br.com.stepify.mongo.repository.TaskRepository;
 import br.com.stepify.service.action.task.UpdateTaskAction;
@@ -38,9 +36,8 @@ import static org.mockito.Mockito.*;
 class TaskServiceTest {
     @Mock private TaskMapper taskMapper;
     @Mock private UpdateTaskAction updateTaskAction;
-    @Mock private MicroTaskService microTaskService;
-    @Mock private TaskRepository taskRepository;
     @Mock private MongoTemplate mongoTemplate;
+    @Mock private TaskRepository taskRepository;
 
     @InjectMocks
     private TaskService taskService;
@@ -49,8 +46,8 @@ class TaskServiceTest {
     class CreateTask {
         @Test
         void shouldCreateTaskSuccessfullyWithEmptyMicroTasks() {
-            CreateTaskCommand command = createTaskCommand(Collections.emptyList());
-            Task expectedTask = createTask("1", command, Collections.emptyList());
+            CreateTaskCommand command = createTaskCommand();
+            Task expectedTask = createTask("1", command);
             TaskDTO expectedTaskDTO = createTaskDTO(expectedTask);
 
             when(taskMapper.fromCommand(any(CreateTaskCommand.class))).thenReturn(expectedTask);
@@ -65,7 +62,6 @@ class TaskServiceTest {
             assertEquals(command.priority(), result.priority());
             assertEquals(command.status(), result.status());
             assertEquals(command.dueDate(), result.dueDate());
-            assertTrue(result.microTasks().isEmpty());
 
             verify(taskMapper).fromCommand(command);
             verify(taskRepository).save(expectedTask);
@@ -74,10 +70,8 @@ class TaskServiceTest {
 
         @Test
         void shouldCreateTaskSuccessfullyWithMicroTasks() {
-            CreateMicroTaskCommand microTaskCommand = createMicroTaskCommand();
-            CreateTaskCommand taskCommand = createTaskCommand(List.of(microTaskCommand));
-            MicroTask expectedMicroTask = createMicroTask(microTaskCommand);
-            Task expectedTask = createTask("1", taskCommand, List.of(expectedMicroTask));
+            CreateTaskCommand taskCommand = createTaskCommand();
+            Task expectedTask = createTask("1", taskCommand);
             TaskDTO expectedTaskDTO = createTaskDTO(expectedTask);
 
             when(taskMapper.fromCommand(any(CreateTaskCommand.class))).thenReturn(expectedTask);
@@ -92,13 +86,6 @@ class TaskServiceTest {
             assertEquals(taskCommand.priority(), result.priority());
             assertEquals(taskCommand.status(), result.status());
             assertEquals(taskCommand.dueDate(), result.dueDate());
-            assertEquals(1, result.microTasks().size());
-
-            MicroTask resultMicroTask = result.microTasks().getFirst();
-            assertEquals(microTaskCommand.title(), resultMicroTask.getTitle());
-            assertEquals(microTaskCommand.description(), resultMicroTask.getDescription());
-            assertEquals(microTaskCommand.status(), resultMicroTask.getStatus());
-            assertEquals(microTaskCommand.order(), resultMicroTask.getOrder());
 
             verify(taskMapper).fromCommand(taskCommand);
             verify(taskRepository).save(expectedTask);
@@ -110,10 +97,10 @@ class TaskServiceTest {
     class FindAllTasks {
         @Test
         void shouldReturnAllTasksSuccessfully() {
-            CreateTaskCommand taskCommand1 = createTaskCommand("Task 1", Collections.emptyList());
-            CreateTaskCommand taskCommand2 = createTaskCommand("Task 2", Collections.emptyList());
-            Task expectedTask1 = createTask("1", taskCommand1, Collections.emptyList());
-            Task expectedTask2 = createTask("2", taskCommand2, Collections.emptyList());
+            CreateTaskCommand taskCommand1 = createTaskCommand("Task 1");
+            CreateTaskCommand taskCommand2 = createTaskCommand("Task 2");
+            Task expectedTask1 = createTask("1", taskCommand1);
+            Task expectedTask2 = createTask("2", taskCommand2);
             List<Task> expectedTaskList = List.of(expectedTask1, expectedTask2);
             TaskDTO expectedTaskDTO1 = createTaskDTO(expectedTask1);
             TaskDTO expectedTaskDTO2 = createTaskDTO(expectedTask2);
@@ -152,7 +139,7 @@ class TaskServiceTest {
         @Test
         void shouldReturnTaskSuccessfullyWhenExists() {
             String taskId = "1";
-            Task expectedTask = createTask(taskId, Collections.emptyList());
+            Task expectedTask = createTask(taskId);
             TaskDTO expectedTaskDTO = createTaskDTO(expectedTask);
 
             when(taskRepository.findByIdAndDeletedFalse(taskId)).thenReturn(Optional.of(expectedTask));
@@ -185,8 +172,8 @@ class TaskServiceTest {
         void shouldUpdateTaskSuccessfullyWhenExists() {
             String taskId = "1";
             UpdateTaskCommand command = createUpdateTaskCommand();
-            Task existingTask = createTask(taskId, Collections.emptyList());
-            Task updatedTask = createTask(command, Collections.emptyList());
+            Task existingTask = createTask(taskId);
+            Task updatedTask = createTask(command);
             TaskDTO expectedTaskDTO = createTaskDTO(updatedTask);
 
             when(taskRepository.findByIdAndDeletedFalse(taskId)).thenReturn(Optional.of(existingTask));
@@ -225,7 +212,7 @@ class TaskServiceTest {
         @Test
         void shouldDeleteTaskSuccessfullyWhenExists() {
             String taskId = "1";
-            Task expectedTask = createTask(taskId, Collections.emptyList());
+            Task expectedTask = createTask(taskId);
             UpdateResult updateResult = mock(UpdateResult.class);
 
             ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
@@ -256,31 +243,17 @@ class TaskServiceTest {
         }
     }
 
-    private CreateTaskCommand createTaskCommand(List<CreateMicroTaskCommand> microTaskCommands) {
-        return createTaskCommand("Title", microTaskCommands);
+    private CreateTaskCommand createTaskCommand() {
+        return createTaskCommand("Title");
     }
 
-    private CreateTaskCommand createTaskCommand(String title, List<CreateMicroTaskCommand> microTaskCommands) {
+    private CreateTaskCommand createTaskCommand(String title) {
         return new CreateTaskCommand(
                 title,
                 "Description",
                 ETaskStatus.PENDING,
                 ETaskPriority.HIGH,
-                microTaskCommands,
                 LocalDateTime.now().plusDays(7)
-        );
-    }
-
-    private CreateMicroTaskCommand createMicroTaskCommand() {
-        return createMicroTaskCommand("MicroTask title", 0);
-    }
-
-    private CreateMicroTaskCommand createMicroTaskCommand(String title, int order) {
-        return new CreateMicroTaskCommand(
-                title,
-                "MicroTask description",
-                ETaskStatus.PENDING,
-                order
         );
     }
 
@@ -295,7 +268,7 @@ class TaskServiceTest {
         );
     }
 
-    private Task createTask(String id, CreateTaskCommand command, List<MicroTask> microTasks) {
+    private Task createTask(String id, CreateTaskCommand command) {
         return Task.builder()
                 .id(id)
                 .title(command.title())
@@ -303,14 +276,13 @@ class TaskServiceTest {
                 .status(command.status())
                 .priority(command.priority())
                 .dueDate(command.dueDate())
-                .microTasks(microTasks)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .deleted(false)
                 .build();
     }
 
-    private Task createTask(String id, List<MicroTask> microTasks) {
+    private Task createTask(String id) {
         return Task.builder()
                 .id(id)
                 .title("Task " + id)
@@ -318,14 +290,13 @@ class TaskServiceTest {
                 .status(ETaskStatus.PENDING)
                 .priority(ETaskPriority.MEDIUM)
                 .dueDate(LocalDateTime.now().plusDays(3))
-                .microTasks(microTasks)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .deleted(false)
                 .build();
     }
 
-    private Task createTask(UpdateTaskCommand command, List<MicroTask> microTasks) {
+    private Task createTask(UpdateTaskCommand command) {
         return Task.builder()
                 .id("1")
                 .title(command.title())
@@ -334,22 +305,9 @@ class TaskServiceTest {
                 .priority(command.priority())
                 .dueDate(command.dueDate())
                 .completedAt(command.completedAt())
-                .microTasks(microTasks)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .deleted(false)
-                .build();
-    }
-
-    private MicroTask createMicroTask(CreateMicroTaskCommand microTaskCommand) {
-        return MicroTask.builder()
-                .id("1")
-                .title(microTaskCommand.title())
-                .description(microTaskCommand.description())
-                .status(microTaskCommand.status())
-                .order(microTaskCommand.order())
-                .completedAt(LocalDateTime.now().plusDays(4))
-                .createdAt(LocalDateTime.now())
                 .build();
     }
 
@@ -360,7 +318,6 @@ class TaskServiceTest {
                 task.getDescription(),
                 task.getStatus(),
                 task.getPriority(),
-                task.getMicroTasks(),
                 task.getDueDate(),
                 task.getCompletedAt(),
                 task.getCreatedAt(),
